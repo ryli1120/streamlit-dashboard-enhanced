@@ -2,15 +2,15 @@ import streamlit as st
 import pandas as pd
 
 # Header and Description
-st.header("2024 AHI 507 Streamlit Enhanced Example")
+st.header("2024 AHI 507 Streamlit Example")
 st.subheader("Visualizing NCES 2021 School Learning Modalities Data")
 st.text("""This dashboard explores the distribution of learning modalities (Hybrid, In Person, Remote) 
 in schools across the U.S. during 2021 using NCES data.""")
 
 # Load the dataset
 df = pd.read_csv("https://healthdata.gov/resource/a8v3-a3m3.csv?$limit=50000")
-df['week_recoded'] = pd.to_datetime(df['week'])  # Convert 'week' to datetime
-df['zip_code'] = df['zip_code'].astype(str)  # Ensure ZIP code is treated as a string
+df['week_recoded'] = pd.to_datetime(df['week'])  # convert week to datetime
+df['zip_code'] = df['zip_code'].astype(str)  # change zipcode type to string
 
 # Metrics
 st.subheader("Dataset Overview")
@@ -27,7 +27,7 @@ plot = pd.pivot_table(df, values='student_count', index=['state'],
                       columns=['learning_modality'], aggfunc="sum")
 plot = plot.reset_index()
 
-# Radio Button Visualization
+#Radio button visualization
 st.subheader("Learning Modalities by State")
 status = st.radio("Select Learning Modality", ('Hybrid', 'In Person', 'Remote'))
 if status == 'Hybrid':
@@ -40,42 +40,36 @@ else:
     st.dataframe(df[df['learning_modality'] == 'Remote'])
     st.bar_chart(plot, x="state", y="Remote")
 
-# Multiselect Visualization
+#Multiselect visualization
 st.subheader("Compare Multiple Learning Modalities")
 selected_modalities = st.multiselect("Select Learning Modalities:",
                                      ['Hybrid', 'In Person', 'Remote'])
 if selected_modalities:
     st.bar_chart(plot, x="state", y=selected_modalities)
 
-# Week Filter with Slider
-st.subheader("Filter Data by Week Range")
+#Create slider for filtering student count
+min_students = int(df['student_count'].min())
+max_students = int(df['student_count'].max())
 
-# Convert Timestamp to datetime.date
-week_min = df['week_recoded'].min().date()
-week_max = df['week_recoded'].max().date()
+student_limit = st.slider(
+    "Select the maximum number of students:",
+    min_value=min_students,
+    max_value=max_students,
+    value=max_students // 2  # Default to half the maximum student count
+)
 
-# Slider for date range
-selected_weeks = st.slider("Select a week range:", value=(week_min, week_max))
+#filter the dataset
+filtered_df = df[df['student_count'] <= student_limit]
 
-# Filter data based on slider selection
-filtered_df = df[(df['week_recoded'] >= pd.to_datetime(selected_weeks[0])) &
-                 (df['week_recoded'] <= pd.to_datetime(selected_weeks[1]))]
-
-st.write(f"Data for selected weeks ({selected_weeks[0]} to {selected_weeks[1]}):")
-st.dataframe(filtered_df)
-
-# Additional Data Summary
+#Additional Data Summary
 st.subheader("Summary Statistics")
 st.text("Distribution of student counts across learning modalities:")
 summary = df.groupby('learning_modality')['student_count'].sum()
 st.dataframe(summary)
 
-# Line Chart by Week
+#Line Chart by Week
 st.subheader("Student Count Trends Over Time")
 weekly_plot = pd.pivot_table(df, values='student_count', index=['week_recoded'],
                              columns=['learning_modality'], aggfunc="sum")
 st.line_chart(weekly_plot)
-
-# Footer
-st.text("Created with Streamlit")
 
